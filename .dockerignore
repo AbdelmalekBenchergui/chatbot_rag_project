@@ -1,0 +1,36 @@
+# Ne pas inclure les fichiers sensibles
+.env
+db.sqlite3
+
+# Environnement virtuel (inutile dans le conteneur)
+venv/
+.venv/
+env/
+ENV/
+
+# Données locales (index FAISS et documents)
+data/
+faiss_index/
+
+# Fichiers temporaires et caches
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Outils ou config de l'éditeur
+.vscode/
+.idea/
+*.iml
+
+# Jupyter / IPython
+.ipynb_checkpoints
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.override.yml

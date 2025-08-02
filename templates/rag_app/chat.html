@@ -1,0 +1,483 @@
+{% extends 'rag_app/base.html' %}
+
+{% block title %}Chat - RAG Application{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1rem;
+        height: calc(100vh - 120px);
+        max-height: 800px;
+    }
+
+    .sidebar {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    .chat-main {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        padding: 1.5rem;
+        border-bottom: 2px solid #ecf0f1;
+        background: #f8f9fa;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+
+    .message {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .message.user {
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+        background: #3498db;
+        color: white;
+    }
+
+    .message.bot .message-avatar {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .message-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 12px;
+        max-width: 70%;
+        word-wrap: break-word;
+    }
+
+    .message.user .message-content {
+        background: #3498db;
+        color: white;
+    }
+
+    .message-time {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        margin-top: 0.5rem;
+    }
+
+    .chat-input {
+        padding: 1.5rem;
+        border-top: 2px solid #ecf0f1;
+        background: #f8f9fa;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-end;
+    }
+
+    .input-group textarea {
+        flex: 1;
+        resize: none;
+        min-height: 50px;
+        max-height: 150px;
+    }
+
+    .conversation-item {
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .conversation-item:hover {
+        background: #f8f9fa;
+    }
+
+    .conversation-item.active {
+        background: #e3f2fd;
+        border-color: #3498db;
+    }
+
+    .conversation-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        color: #2c3e50;
+    }
+
+    .conversation-date {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 1rem;
+        color: #7f8c8d;
+    }
+
+    .loading.show {
+        display: block;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        
+        .sidebar {
+            order: 2;
+            max-height: 300px;
+        }
+        
+        .chat-main {
+            order: 1;
+            height: 60vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- Statistiques -->
+        <div class="mb-3">
+            <h4 style="margin-bottom: 1rem; color: #2c3e50;">
+                <i class="fas fa-chart-bar"></i> Statistiques
+            </h4>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">{{ total_documents }}</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ indexed_documents }}</div>
+                    <div class="stat-label">Indexés</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="mb-3">
+            <a href="{% url 'home' %}" class="btn btn-outline" style="width: 100%; margin-bottom: 0.5rem;">
+                <i class="fas fa-home"></i> Accueil
+            </a>
+            <button onclick="startNewConversation()" class="btn btn-primary" style="width: 100%;">
+                <i class="fas fa-plus"></i> Nouvelle conversation
+            </button>
+        </div>
+
+        <!-- Conversations récentes -->
+        <div>
+            <h4 style="margin-bottom: 1rem; color: #2c3e50;">
+                <i class="fas fa-history"></i> Récentes
+            </h4>
+            <div id="conversations-list">
+                {% for conv in recent_conversations %}
+                    <div class="conversation-item {% if conversation.id == conv.id %}active{% endif %}" 
+                         onclick="loadConversation({{ conv.id }})">
+                        <div class="conversation-title">
+                            {{ conv.title|truncatechars:30 }}
+                        </div>
+                        <div class="conversation-date">
+                            {{ conv.updated_at|date:"d/m H:i" }}
+                        </div>
+                        <button class="btn btn-sm btn-danger" 
+                                style="float: right; margin-top: -30px; padding: 0.25rem 0.5rem; font-size: 0.7rem;"
+                                onclick="event.stopPropagation(); deleteConversation({{ conv.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                {% empty %}
+                    <div class="text-center" style="color: #7f8c8d; padding: 1rem;">
+                        <i class="fas fa-comments" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p>Aucune conversation</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat principal -->
+    <div class="chat-main">
+        <!-- En-tête du chat -->
+        <div class="chat-header">
+            <h3 style="margin: 0; color: #2c3e50;">
+                <i class="fas fa-robot"></i> 
+                {% if conversation %}
+                    {{ conversation.title }}
+                {% else %}
+                    Assistant RAG
+                {% endif %}
+            </h3>
+            <p style="margin: 0.5rem 0 0 0; color: #7f8c8d;">
+                Posez vos questions sur les CV uploadés
+            </p>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages">
+            {% if conversation %}
+                {% for message in conversation.messages.all %}
+                    <div class="message {% if message.sender %}user{% else %}bot{% endif %}">
+                        <div class="message-avatar">
+                            {% if message.sender %}
+                                <i class="fas fa-user"></i>
+                            {% else %}
+                                <i class="fas fa-robot"></i>
+                            {% endif %}
+                        </div>
+                        <div class="message-content">
+                            {{ message.content|linebreaks }}
+                            <div class="message-time">
+                                {{ message.timestamp|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center" style="padding: 3rem; color: #7f8c8d;">
+                    <i class="fas fa-comments" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                    <h4>Bienvenue dans l'assistant RAG !</h4>
+                    <p>Commencez une conversation en posant une question sur vos CV.</p>
+                    <div class="mt-2">
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                            <strong>Exemples de questions :</strong><br>
+                            • "Trouve-moi des développeurs Python"<br>
+                            • "Qui a de l'expérience en machine learning ?"<br>
+                            • "Quels candidats parlent anglais ?"
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner fa-spin"></i> L'assistant réfléchit...
+            </div>
+        </div>
+
+        <!-- Zone de saisie -->
+        <div class="chat-input">
+            <form id="chat-form">
+                {% csrf_token %}
+                <div class="input-group">
+                    <textarea id="message-input" 
+                              class="form-control" 
+                              placeholder="Tapez votre message..." 
+                              rows="2"
+                              required></textarea>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentConversationId = {{ conversation.id|default:"null" }};
+
+$(document).ready(function() {
+    // Auto-resize textarea
+    $('#message-input').on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    // Scroll to bottom of messages
+    scrollToBottom();
+
+    // Submit form on Enter (but not Shift+Enter)
+    $('#message-input').keydown(function(e) {
+        if (e.keyCode === 13 && !e.shiftKey) {
+            e.preventDefault();
+            $('#chat-form').submit();
+        }
+    });
+});
+
+$('#chat-form').submit(function(e) {
+    e.preventDefault();
+    
+    const message = $('#message-input').val().trim();
+    if (!message) return;
+
+    // Add user message to chat
+    addMessage(message, true);
+    
+    // Clear input and show loading
+    $('#message-input').val('');
+    $('#loading').addClass('show');
+    
+    // Send message
+    $.ajax({
+        url: '{% url "send_message" %}',
+        method: 'POST',
+        data: JSON.stringify({
+            message: message,
+            conversation_id: currentConversationId
+        }),
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(data) {
+            $('#loading').removeClass('show');
+            
+            if (data.success) {
+                // Update conversation ID if new conversation
+                if (!currentConversationId) {
+                    currentConversationId = data.conversation_id;
+                    // Update URL without refresh
+                    history.pushState(null, '', `/chat/${currentConversationId}/`);
+                }
+                
+                // Add bot response
+                addMessage(data.bot_message.content, false);
+                
+                // Reload conversations list if it's a new conversation
+                if (data.conversation_id && !$('.conversation-item.active').length) {
+                    location.reload();
+                }
+            } else {
+                addMessage('Erreur: ' + data.error, false, true);
+            }
+        },
+        error: function(xhr) {
+            $('#loading').removeClass('show');
+            const error = xhr.responseJSON ? xhr.responseJSON.error : 'Erreur de connexion';
+            addMessage('Erreur: ' + error, false, true);
+        }
+    });
+});
+
+function addMessage(content, isUser, isError = false) {
+    const messageClass = isUser ? 'user' : 'bot';
+    const avatar = isUser ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+    const errorClass = isError ? ' style="background: #e74c3c; color: white;"' : '';
+    
+    const messageHtml = `
+        <div class="message ${messageClass}">
+            <div class="message-avatar">
+                ${avatar}
+            </div>
+            <div class="message-content"${errorClass}>
+                ${content.replace(/\n/g, '<br>')}
+                <div class="message-time">
+                    ${new Date().toLocaleString('fr-FR')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#chat-messages').append(messageHtml);
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    const chatMessages = $('#chat-messages');
+    chatMessages.scrollTop(chatMessages[0].scrollHeight);
+}
+
+function loadConversation(conversationId) {
+    window.location.href = `/chat/${conversationId}/`;
+}
+
+function startNewConversation() {
+    window.location.href = '{% url "chat_interface" %}';
+}
+
+function deleteConversation(conversationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette conversation ?')) {
+        $.ajax({
+            url: `/conversations/${conversationId}/delete/`,
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                if (data.success) {
+                    if (currentConversationId == conversationId) {
+                        // If we're deleting the current conversation, redirect to new chat
+                        window.location.href = '{% url "chat_interface" %}';
+                    } else {
+                        // Just remove the conversation from the sidebar
+                        $(`.conversation-item[onclick="loadConversation(${conversationId})"]`).fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            },
+            error: function() {
+                alert('Erreur lors de la suppression');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
