@@ -1,11 +1,11 @@
-# 💬 Chatbot RAG Project (Django + FAISS)
+#  Chatbot RAG Project (Django + FAISS)
 
 Un chatbot basé sur le **Retrieval-Augmented Generation (RAG)**, développé avec Django, FAISS et OpenAI.  
 Ce projet permet d'uploader des documents, de les indexer avec FAISS, puis d'interroger leur contenu grâce à l'API OpenAI.
 
 ---
 
-## ⚙️ Prérequis
+## Prérequis
 
 - Python 3.12+
 - `pip`
@@ -14,12 +14,12 @@ Ce projet permet d'uploader des documents, de les indexer avec FAISS, puis d'int
 
 ---
 
-## 📦 Installation locale (sans Docker)
+## Installation locale (sans Docker)
 
 Clonez ce dépôt :
 
 ```bash
-git clone https://github.com/votre-utilisateur/chatbot_rag_project.git
+git clone https://github.com/AbdelmalekBenchergui/chatbot_rag_project.git
 cd chatbot_rag_project
 ```
 
@@ -53,15 +53,15 @@ python manage.py runserver
 ```
 
 Accédez à l'application via :  
-[http://127.0.0.1:8000](http://127.0.0.1:8000)
+http://127.0.0.1:8000
 
 ---
 
-## 🐳 Utilisation avec Docker
+## Utilisation avec Docker
 
 ```bash
 # 1. Cloner le projet
-git clone https://github.com/votre-utilisateur/chatbot_rag_project.git
+git clone https://github.com/AbdelmalekBenchergui/chatbot_rag_project.git
 cd chatbot_rag_project
 
 # 2. Construire l'image Docker
@@ -76,20 +76,7 @@ docker run -e OPENAI_API_KEY=your_key \
 
 ---
 
-## 🔐 Interface d'administration Django
-
-Créer un super utilisateur (optionnel mais recommandé) :
-
-```bash
-python manage.py createsuperuser
-```
-
-Accès à l'administration :  
-[http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
-
----
-
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 chatbot_rag_project/
@@ -106,15 +93,12 @@ chatbot_rag_project/
 
 ---
 
-## 🧠 Stack utilisée
+##  Stack utilisée
 
-* Django (Backend web + ORM)
-* FAISS (indexation vectorielle)
-* OpenAI API (GPT pour les réponses)
-* Docker (déploiement)
+* Django (Backend web + ORM)  
+* FAISS (indexation vectorielle)  
+* OpenAI API (GPT pour les réponses)  
+* React (frontend)  
+* Docker (déploiement)  
 
 ---
-
-## 📜 Licence
-
-Projet éducatif à usage libre.
