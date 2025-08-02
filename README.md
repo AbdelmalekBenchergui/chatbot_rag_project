@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 # 4. Configurer l'environnement
 cp .env.example .env
-# Ajoutez votre clé OpenAI dans le fichier `.env`
+# Ajoutez les variables d'environnement dans  le fichier `.env`
 
 # 5. Préparer la base de données et les index
 cp db.sqlite3.example db.sqlite3
@@ -68,7 +68,7 @@ cd chatbot_rag_project
 docker build -t chatbot_rag_project .
 
 # 3. Lancer le conteneur avec votre clé API
-docker run -e OPENAI_API_KEY=your_key \
+docker run --env-file .env \
     -p 8000:8000 \
     --name chatbot_rag_container \
     chatbot_rag_project
